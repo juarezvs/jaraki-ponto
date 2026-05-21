@@ -92,7 +92,7 @@ interface PDFExportButtonProps<T> {
   orientation?: 'portrait' | 'landscape'; 
 }
 
-export function PDFExportButton<T>({ 
+export default function PDFExportButton<T>({ 
   title, 
   filename, 
   columns, 

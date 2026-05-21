@@ -1,94 +1,133 @@
-'use client';
+import { FiLayers, FiFolder, FiUsers, FiCornerDownRight } from 'react-icons/fi';
 
-import React from 'react';
-import { Clock, Calendar, AlertCircle, FileText } from 'lucide-react';
-import { CardMetrica } from './components/dashboard/card-metrica'; 
-import { ListaAlertas } from './components/dashboard/lista-alertas';
-import { TabelaEspelho } from './components/dashboard/tabela-espelho';
-
-export default function DashboardPontoPage() {
-  // Dados simulados baseados nos requisitos de fechamento da Diref
-  const inconsistencias = [
-    { id: '1', data: '14/05/2026', descricao: 'Ausência de marcação de Saída Intermediária', status: 'Pendente' as const },
-    { id: '2', data: '12/05/2026', descricao: 'Incompatibilidade de carga horária mínima', status: 'Análise' as const },
-    { id: '2', data: '12/05/2026', descricao: 'Incompatibilidade de carga horária mínima', status: 'Análise' as const },
-    { id: '2', data: '12/05/2026', descricao: 'Incompatibilidade de carga horária mínima', status: 'Análise' as const },
-    { id: '2', data: '12/05/2026', descricao: 'Incompatibilidade de carga horária mínima', status: 'Análise' as const },
+export default function FaseUmFundacaoPage() {
+  // Mock estruturado de Lotações Recursivas (Pai e Filho) - Art. 4 Portaria 135/2025
+  const lotacoesMock = [
+    { id: '1', nome: '1ª Vara Federal', sigla: '01VF', unidade: 'SEDE_MANAUS', parent: null },
+    { id: '2', nome: 'Gabinete da 1ª Vara', sigla: 'GAB01', unidade: 'SEDE_MANAUS', parent: '1ª Vara Federal' },
+    { id: '3', nome: 'Secretaria da 1ª Vara', sigla: 'SEC01', unidade: 'SEDE_MANAUS', parent: '1ª Vara Federal' },
+    { id: '4', nome: 'Subseção Judiciária de Tabatinga', sigla: 'SSJTB', unidade: 'SUBSECAO_TABATINGA', parent: null },
   ];
 
-  const ultimosRegistros = [
-    { data: '18/05/2026', entrada1: '08:02', saida1: '12:00', entrada2: '13:02', saida2: '17:05', total: '08:05', saldo: '+00:05' },
-    { data: '15/05/2026', entrada1: '07:55', saida1: '12:05', entrada2: '13:00', saida2: '16:45', total: '07:55', saldo: '-00:05' },
-    { data: '14/05/2026', entrada1: '08:00', saida1: '--:--', entrada2: '13:00', saida2: '17:00', total: '08:00', saldo: '00:00' },
-    { data: '13/05/2026', entrada1: '08:10', saida1: '12:00', entrada2: '13:00', saida2: '17:15', total: '08:05', saldo: '+00:05' },
+  // Mock de Usuários com Múltiplos Perfis Simultâneos
+  const servidoresMock = [
+    { matricula: 'AM1024', nome: 'Dr. Érico Rodrigo Freitas Pinheiro', lotacao: 'Diretoria do Foro (DIREF)', perfis: ['SERVIDOR', 'DIRETOR_DO_FORO'], regime: 'Presencial' },
+    { matricula: 'AM5432', nome: 'Mariana Costa Ferreira', lotacao: 'Secretaria da 1ª Vara', perfis: ['SERVIDOR', 'CHEFIA_IMEDIATA', 'DIRETOR_SECRETARIA'], regime: 'Teletrabalho' },
+    { matricula: 'AM9876', nome: 'Carlos Augusto Amazonas', lotacao: 'Subseção Judiciária de Tabatinga', perfis: ['SERVIDOR'], regime: 'Presencial' },
   ];
 
   return (
-    <main className="min-h-screen bg-background text-foreground p-4 sm:p-8 antialiased transition-colors duration-300">
-      <div className="max-w-7xl w-full mx-auto space-y-6">
-        
-        {/* Cabeçalho do Painel */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-card-border pb-5">
+    <div className="space-y-6">
+      {/* CABEÇALHO DA VIEW */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Fase 1: Fundação Cadastral</h1>
+        <p className="text-sm text-muted">
+          Infraestrutura visual homologada e mapeamento de vínculos conforme Portaria SJAM-DIREF 135/2025.
+        </p>
+      </div>
+
+      {/* CARDS DE HISTÓRICO CADASTRAL */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-5 bg-card border border-card-border rounded-xl shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+            <FiLayers className="w-5 h-5" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Clock className="h-6 w-6 text-primary" /> Espelho de Ponto Eletrônico
-            </h1>
-            <p className="text-sm text-muted">Acompanhamento de assiduidade em conformidade com a Portaria Normativa DIREF.</p>
-          </div>
-          <div className="text-xs font-medium text-muted bg-card border border-card-border px-3 py-1.5 rounded-lg shadow-sm">
-            Período de Apuração: <span className="text-foreground font-semibold">01/05/2026 a 31/05/2026</span>
+            <p className="text-xs font-medium text-muted">Estruturas Ativas</p>
+            <h3 className="text-xl font-bold text-foreground">3 Unidades JFAM</h3>
           </div>
         </div>
 
-        {/* Linha 1: Grid de Métricas Principais Regulamentadas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <CardMetrica 
-            title="Saldo de Banco de Horas"
-            value="+04:25"
-            subtext="Acumulado pronto para compensação"
-            icon={<Clock className="h-4 w-4" />}
-            variant="success"
-          />
-          <CardMetrica 
-            title="Horas Cumpridas no Mês"
-            value="96h / 160h"
-            subtext="60% da jornada mensal realizada"
-            icon={<Calendar className="h-4 w-4" />}
-          />
-          <CardMetrica 
-            title="Inconsistências no Mês"
-            value="02 pendências"
-            subtext="Necessita de justificativa do servidor"
-            icon={<AlertCircle className="h-4 w-4" />}
-            variant="alert"
-          />
-          <CardMetrica 
-            title="Dispensa / Afastamentos"
-            value="00 ocorrências"
-            subtext="Nenhum registro de licença homologado"
-            icon={<FileText className="h-4 w-4" />}
-          />
-        </div>
-
-        {/* Linha 2: Alertas e Tabela Ocupando Layout Assíncrono */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Alertas ocupam 1 coluna lateral */}
-          <div className="lg:col-span-1">
-            <ListaAlertas itens={inconsistencias} />
+        <div className="p-5 bg-card border border-card-border rounded-xl shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+            <FiFolder className="w-5 h-5" />
           </div>
-          
-          {/* A tabela principal ganha 2 colunas de espaço */}
-          <div className="lg:col-span-2">
-            <TabelaEspelho registros={ultimosRegistros} />
+          <div>
+            <p className="text-xs font-medium text-muted">Lotações Mapeadas</p>
+            <h3 className="text-xl font-bold text-foreground">{lotacoesMock.length} Setores</h3>
           </div>
         </div>
 
-        {/* Rodapé Informativo Legal da Portaria */}
-        <div className="p-4 bg-card rounded-xl border border-card-border text-xs text-muted leading-relaxed">
-          <strong>Nota de Conformidade DIREF:</strong> Conforme regulamentação do Sistema de Registro Eletrônico de Ponto, as inconsistências não tratadas até o quinto dia útil do mês subsequente acarretarão em lançamento de falta ou perda de banco de horas correspondente ao período incompleto. Certifique-se de anexar os atestados/justificativas diretamente no módulo de requerimentos.
+        <div className="p-5 bg-card border border-card-border rounded-xl shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+            <FiUsers className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted">Servidores Vinculados</p>
+            <h3 className="text-xl font-bold text-foreground">{servidoresMock.length} Ativos</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* GRID DE INFORMAÇÕES CORPORATIVAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* REQUISITO: HIERARQUIA DE LOTAÇÕES FILHAS */}
+        <div className="bg-card border border-card-border rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-card-border bg-background/30">
+            <h3 className="text-sm font-bold text-foreground">Mapeamento de Lotações (Pai/Filho)</h3>
+          </div>
+          <div className="p-4 space-y-3">
+            {lotacoesMock.map((lot) => (
+              <div key={lot.id} className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-card-border/40">
+                <div className="flex items-center gap-2">
+                  {lot.parent ? (
+                    <FiCornerDownRight className="w-4 h-4 text-primary ml-2 shrink-0" />
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{lot.nome}</p>
+                    <p className="text-xs text-muted">{lot.unidade.replace('_', ' ')}</p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono px-2 py-1 bg-primary/10 text-primary font-bold rounded">
+                  {lot.sigla}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* REQUISITO: MÚLTIPLOS PERFIS SIMULTÂNEOS POR SERVIDOR */}
+        <div className="bg-card border border-card-border rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-card-border bg-background/30">
+            <h3 className="text-sm font-bold text-foreground">Servidores e Acúmulo de Perfis (Art. 4º)</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-background/80 border-b border-card-border text-[10px] font-bold uppercase tracking-wider text-muted">
+                  <th className="p-3">Matrícula</th>
+                  <th className="p-3">Servidor / Lotação</th>
+                  <th className="p-3 text-right">Perfis Ativos</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-card-border text-xs text-foreground">
+                {servidoresMock.map((srv) => (
+                  <tr key={srv.matricula} className="hover:bg-background/40 transition-colors">
+                    <td className="p-3 font-mono text-muted">{srv.matricula}</td>
+                    <td className="p-3">
+                      <p className="font-semibold text-foreground">{srv.nome}</p>
+                      <p className="text-[11px] text-muted">{srv.lotacao} • <span className="text-primary font-medium">{srv.regime}</span></p>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex flex-wrap justify-end gap-1">
+                        {srv.perfis.map((perf) => (
+                          <span key={perf} className="px-1.5 py-0.5 text-[9px] font-bold uppercase bg-primary text-white rounded">
+                            {perf.replace('_', ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
-    </main>
+    </div>
   );
 }

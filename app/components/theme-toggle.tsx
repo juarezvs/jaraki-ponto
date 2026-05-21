@@ -1,26 +1,27 @@
 'use client';
-
-import React from 'react';
-import { Sun, Moon } from 'lucide-react';
 import { useTheme } from './theme-provider';
+import { FiSun, FiMoon } from 'react-icons/fi';
 
-export function ThemeToggle() {
+export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
-  const isDarkMode = theme === 'dark';
 
   return (
     <button
       onClick={toggleTheme}
-      className="relative h-8 w-14 bg-muted-light dark:bg-slate-800 rounded-full p-1 transition-colors duration-300 focus:outline-none shadow-inner border border-card-border cursor-pointer"
-      aria-label="Alternar tema de cores"
+      className="relative w-14 h-8 rounded-full bg-background border border-card-border p-1 transition-colors duration-300 flex items-center justify-between cursor-pointer"
+      aria-label="Alternar tema"
     >
-      <div className={`absolute top-0.5 bottom-0.5 h-6 w-6 rounded-full bg-card shadow-sm flex items-center justify-center border border-card-border/50 transform transition-transform duration-300 ease-out ${
-        isDarkMode ? 'translate-x-6' : 'translate-x-0'
-      }`}>
-        {isDarkMode ? (
-          <Moon className="h-3.5 w-3.5 text-indigo-400 fill-indigo-400/10" />
+      <FiSun className="w-4 h-4 text-amber-500 ml-1" />
+      <FiMoon className="w-4 h-4 text-slate-400 mr-1" />
+      <div
+        className={`absolute w-6 h-6 rounded-full bg-primary shadow-md transition-transform duration-300 flex items-center justify-center ${
+          theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
+                }`}
+      >
+        {theme === 'dark' ? (
+          <FiMoon className="w-3.5 h-3.5 text-white" />
         ) : (
-          <Sun className="h-3.5 w-3.5 text-amber-500 fill-amber-500/10" />
+          <FiSun className="w-3.5 h-3.5 text-white" />
         )}
       </div>
     </button>

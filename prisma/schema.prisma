@@ -1,0 +1,296 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// ENUMS COMPLIANCE PORTARIA 135/2025
+// ==========================================
+
+enum UnidadeJfam {
+  SEDE_MANAUS
+  SUBSECAO_TABATINGA
+  UAA_TEFE
+}
+
+enum PerfilUsuario {
+  SERVIDOR
+  CHEFIA_IMEDIATA      // Diretores de Secretaria/Núcleo (Art. 2º, IX)
+  DIRETOR_SECRETARIA
+  DIRETOR_NUCLEO
+  DIRETOR_DO_FORO      // Autoridade máxima de descontos e homologação (Art. 20, III)
+  ADMINISTRADOR_SECAP  // Seção de Cadastro de Pessoal (Art. 20, II)
+  NUTEC_ADMIN          // Gerenciamento técnico do sistema (Art. 20, I)
+}
+
+enum TipoJornada {
+  SET_HORAS_ININTERRUPTAS
+  OITO_HORAS_DOIS_TURNOS
+  ESPECIAL_LEGISLACAO
+}
+
+enum MeioRegistro {
+  BIOMETRIA_DIGITAL     // Padrão obrigatório (Art. 1º, parágrafo único)
+  ALTERNATIVO_NUTEC     // Falha técnica na digital (Art. 6º, §1º)
+  MANUAL_OFICIAL        // Oficiais de Justiça / Sem infraestrutura (Art. 6º, §4º e §5º)
+}
+
+enum TipoOcorrencia {
+  TRABALHO_EXTERNO      // Art. 8º, §4º, II
+  VIAGEM_SERVICO        // Art. 8º, §5º
+  CAPACITACAO_INTERNA   // Art. 7º, §3º
+  CAPACITACAO_EXTERNA   // Art. 7º, §1º e §2º
+  FALTA_JUSTIFICADA     // Art. 9º
+  FALTA_INJUSTIFICADA   // Art. 11, parágrafo único
+  PLANTAO               // Art. 15, parágrafo único
+  RECESSO_FORENSE       // Art. 15
+}
+
+enum StatusWorkflow {
+  PENDENTE
+  NOTIFICADO_SERVIDOR   // Prazo de 2 dias úteis para ampla defesa (Art. 16, §4º)
+  JUSTIFICADO_SERVIDOR  // Aguardando reanálise da chefia
+  APROVADO              // Homologado pela chefia imediata
+  REJEITADO_DESCONTO    // Enviado à SECAP/DIREF para corte de folha (Art. 16, §5º)
+}
+
+// ==========================================
+// ESTRUTURA ORGANIZACIONAL (JFAM)
+// ==========================================
+
+model Lotacao {
+  id        String      @id @default(uuid())
+  nome      String      @unique // Ex: "1ª Vara Federal", "NUCGP", "SECAD"
+  sigla     String      @unique // Ex: "01VF", "NUCGP", "SECAD"
+  unidade   UnidadeJfam
+
+  // Regra: Um departamento pode ser filho de outro (Auto-relacionamento opcional)
+  parentId  String?     @map("parent_id")
+  parent    Lotacao?    @relation("HierarquiaLotacao", fields: [parentId], references: [id], onDelete: Restrict)
+  children  Lotacao[]   @relation("HierarquiaLotacao")
+
+  usuarios  Usuario[]
+  
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@map("lotacoes")
+}
+
+// ==========================================
+// CORPO DE SERVIDORES E MAGISTRADOS
+// ==========================================
+
+model Usuario {
+  id               String          @id @default(uuid())
+  matricula        String          @unique // Matrícula funcional SJAM (Ex: AM12345)
+  nome             String
+  email            String          @unique
+  senhaHash        String          @map("senha_hash")
+  ativo            Boolean         @default(true)
+  
+  // Regra: Um usuário pode ter múltiplos perfis ao mesmo tempo (PostgreSQL Enum Array)
+  perfis           PerfilUsuario[] @default([SERVIDOR])
+  
+  tipoJornada      TipoJornada     @default(SET_HORAS_ININTERRUPTAS) @map("tipo_jornada")
+  isOficialJustica Boolean         @default(false) @map("is_oficial_justica") // Dispensa biométrica (Art. 6º, §4º, I)
+  isTeletrabalho   Boolean         @default(false) @map("is_teletrabalho")   // Regime remoto (Art. 6º, §6º)
+
+  lotacaoId        String          @map("lotacao_id")
+  lotacao          Lotacao         @relation(fields: [lotacaoId], references: [id])
+
+  // Delegação de competência para homologação (Art. 16, §1º)
+  delegadoPorId    String?         @map("delegado_por_id")
+  delegadoPor      Usuario?        @relation("DelegacaoChefia", fields: [delegadoPorId], references: [id])
+  delegados        Usuario[]       @relation("DelegacaoChefia")
+
+  // Relacionamentos operacionais
+  escalas          EscalaIndividual[]
+  registrosPonto   RegistroPonto[]
+  ocorrenciasAvaliadas OcorrenciaPonto[] @relation("ChefiaAvaliadora")
+  retificacoesAvaliadas RetificacaoPonto[] @relation("ChefiaRetificadora")
+  bancosHoras      BancoHorasMensal[]
+  logsAuditoria    LogAuditoria[]
+
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  @@map("usuarios")
+}
+
+// ==========================================
+// REQUISITO ART. 18, I: ESCALAS E HORÁRIOS
+// ==========================================
+
+model EscalaIndividual {
+  id             String      @id @default(uuid())
+  usuarioId      String      @map("usuario_id")
+  usuario        Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  // Horários de referência da escala (Art. 18, I, a e b)
+  horaEntrada    DateTime    @db.Time @map("hora_entrada")
+  horaSaida      DateTime    @db.Time @map("hora_saida")
+  isDiferenciado Boolean     @default(false) @map("is_diferenciado") // Flexibilização (Art. 4º, §3º)
+  
+  inicioVigencia DateTime    @db.Date @map("inicio_vigencia")
+  fimVigencia    DateTime?   @db.Date @map("fim_vigencia")
+
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  @@map("escalas_individuais")
+}
+
+// ==========================================
+// CONTROLE DIÁRIO DE FREQUÊNCIA
+// ==========================================
+
+model RegistroPonto {
+  id               String            @id @default(uuid())
+  usuarioId        String            @map("usuario_id")
+  usuario          Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  data             DateTime          @db.Date
+
+  // Batidas registradas (Art. 2º, I combinando minutos)
+  entrada1         DateTime?         @db.Time @map("entrada_1")
+  saida1           DateTime?         @db.Time @map("saida_1") // Almoço - Saída
+  entrada2         DateTime?         @db.Time @map("entrada_2") // Almoço - Retorno
+  saida2           DateTime?         @db.Time @map("saida_2")
+
+  // Rastreabilidade do hardware utilizado por batida
+  meioEntrada1     MeioRegistro      @default(BIOMETRIA_DIGITAL) @map("meio_entrada_1")
+  meioSaida1       MeioRegistro      @default(BIOMETRIA_DIGITAL) @map("meio_saida_1")
+  meioEntrada2     MeioRegistro      @default(BIOMETRIA_DIGITAL) @map("meio_entrada_2")
+  meioSaida2       MeioRegistro      @default(BIOMETRIA_DIGITAL) @map("meio_saida_2")
+
+  // CONTROLE DE SALDOS (Métricas estritas da portaria, calculadas em minutos inteiros)
+  minutosTrabalhados Int             @default(0) @map("minutos_trabalhados")
+  minutosDebito      Int             @default(0) @map("minutos_debito")       // Horas-débito (Art. 2º, II)
+  minutosCredito     Int             @default(0) @map("minutos_credito")      // Horas-crédito legítimas (Art. 2º, III)
+  minutosNaoAutorizados Int          @default(0) @map("minutos_nao_autorizados") // Fora da jornada/sem aval (Art. 2º, IV)
+  minutosAcimaLimite Int             @default(0) @map("minutos_acima_limite") // Excedeu 16h mensais (Art. 2º, V)
+  
+  // Horas Excedentes com multiplicadores da portaria (Art. 2º, VI)
+  minutosExcedentes50  Int           @default(0) @map("minutos_excedentes_50")  // Sábados / Pontos facultativos > 8h
+  minutosExcedentes100 Int           @default(0) @map("minutos_excedentes_100") // Domingos e Feriados (Em dobro)
+  minutosNoturnos      Int           @default(0) @map("minutos_noturnos")       // Dias úteis após as 19h (Art. 2º, VII)
+
+  isHomologado     Boolean           @default(false) @map("is_homologado")
+  
+  ocorrencias      OcorrenciaPonto[]
+  retificacoes     RetificacaoPonto[]
+
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  @@unique([usuarioId, data])
+  @@index([data, usuarioId]) // Index composto de alta performance para renderização de espelho
+  @@map("registros_ponto")
+}
+
+// ==========================================
+// TRABALHOS EXTERNOS, CAPACITAÇÃO E ANEXOS
+// ==========================================
+
+model OcorrenciaPonto {
+  id              String         @id @default(uuid())
+  usuarioId       String         @map("usuario_id")
+  usuario         Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  registroPontoId String?        @map("registro_ponto_id")
+  registroPonto   RegistroPonto? @relation(fields: [registroPontoId], references: [id], onDelete: Cascade)
+
+  tipo            TipoOcorrencia
+  descricao       String         @db.Text
+  documentoUrl    String?        @map("documento_url") // Link para PDF do atestado/certidão de capacitação no SEI (Art. 7º, §1º)
+  
+  status          StatusWorkflow @default(PENDENTE)
+  
+  // Avaliação da Chefia Imediata
+  chefiaId        String?        @map("chefia_id")
+  chefia          Usuario?       @relation("ChefiaAvaliadora", fields: [chefiaId], references: [id])
+  observacoesChefia String?      @db.Text @map("observacoes_chefia")
+  dataAvaliacao   DateTime?      @map("data_avaliacao")
+
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@map("ocorrencias_ponto")
+}
+
+// ==========================================
+// REQUISITO ART. 18, IV: CORREÇÃO DE FALHAS
+// ==========================================
+
+model RetificacaoPonto {
+  id               String         @id @default(uuid())
+  registroPontoId  String         @map("registro_ponto_id")
+  registroPonto    RegistroPonto  @relation(fields: [registroPontoId], references: [id], onDelete: Cascade)
+  
+  campoModificado  String         @map("campo_modificado") // Ex: "saida_1" ou "entrada_2"
+  horarioProposto  DateTime       @db.Time @map("horario_proposto")
+  justificativa    String         @db.Text // Motivo da falha de leitura (Art. 18, IV)
+  
+  status           StatusWorkflow @default(PENDENTE)
+  
+  chefiaId         String?        @map("chefia_id")
+  chefia           Usuario?       @relation("ChefiaRetificadora", fields: [chefiaId], references: [id])
+  dataAnalise      DateTime?      @map("data_analise")
+
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  @@map("retificacoes_ponto")
+}
+
+// ==========================================
+// BANCO DE HORAS E CONSOLIDAÇÃO MENSAL
+// ==========================================
+
+model BancoHorasMensal {
+  id                 String         @id @default(uuid())
+  usuarioId          String         @map("usuario_id")
+  usuario            Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  mesReferencia      DateTime       @db.Date @map("mes_referencia") // Dia 01 de cada mês (Art. 2º, XIII)
+  
+  saldoAnterior      Int            @default(0) @map("saldo_anterior") // Herdado do mês passado
+  creditosDoMes      Int            @default(0) @map("creditos_do_mes") // Créditos acumulados (Limite de 16h/960min, Art. 14)
+  debitosDoMes       Int            @default(0) @map("debitos_do_mes")  // Débitos acumulados no mês
+  compensacoesDoMes  Int            @default(0) @map("compensacoes_do_mes")
+  saldoFinal         Int            @default(0) @map("saldo_final")     // Saldo líquido que vai para o banco (Art. 2º, XI)
+
+  status             StatusWorkflow @default(PENDENTE) // Processo de Homologação Mensal (Art. 16)
+  boletimSeiCodigo   String?        @map("boletim_sei_codigo") // ID do processo inserido no SEI (Art. 8º, §4º)
+
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  @@unique([usuarioId, mesReferencia])
+  @@map("banco_horas_mensal")
+}
+
+// ==========================================
+// REQUISITO NÃO-FUNCIONAL: RASTREABILIDADE
+// ==========================================
+
+model LogAuditoria {
+  id           String   @id @default(uuid())
+  usuarioId    String?  @map("usuario_id") // Operador que executou a ação
+  usuario      Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  
+  acao         String   // Ex: "HOMOLOGACAO_MENSAL", "RETIFICACAO_MANUAL", "DELEGACAO_COMPETENCIA"
+  tabela       String   // Ex: "banco_horas_mensal"
+  registroId   String   // ID da linha modificada
+  dadosAntigos Json?    @map("dados_antigos")
+  dadosNovos   Json?    @map("dados_novos")
+  ipEndereco   String?  @map("ip_endereco") // IP interno da sub-rede JFAM
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([tabela, registroId])
+  @@map("logs_auditoria")
+}

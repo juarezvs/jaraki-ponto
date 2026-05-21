@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Clock } from 'lucide-react';
-import { PDFExportButton } from '../components/pdf-export-button';
+import  PDFExportButton  from '../components/pdf-export-button';
 
 
 interface PontoRegistro {

@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { DashboardLayout } from './components/dashboard-layout';
 import './globals.css';
+import DashboardLayout from './components/dashboard-layout';
 
 export const metadata: Metadata = {
-  title: 'Orbund SIS - Dashboard',
-  description: 'Student Information System Clone',
+  title: 'JARAKI-PONTO | JFAM',
+  description: 'Controle de Frequência Eletrônica - Justiça Federal do Amazonas',
 };
 
 export default function RootLayout({
@@ -13,11 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="scroll-smooth">
-      <body className="antialiased min-h-screen transition-colors duration-300">
-        <DashboardLayout>
-          {children}
-        </DashboardLayout>
+    <html lang="pt-BR" className="antialiased">
+      <body>
+        <DashboardLayout>{children}</DashboardLayout>
       </body>
     </html>
   );

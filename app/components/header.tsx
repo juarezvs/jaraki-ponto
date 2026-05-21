@@ -1,32 +1,37 @@
 'use client';
+import ThemeToggle from './theme-toggle';
+import { FiSearch, FiBell } from 'react-icons/fi';
 
-import React from 'react';
-import { Search, Bell } from 'lucide-react';
-import { ThemeToggle } from './theme-toggle';
-
-export function Header() {
+export default function Header() {
   return (
-    <header className="h-16 bg-card border-b border-card-border px-6 flex items-center justify-between gap-4 sticky top-0 z-10 shadow-sm transition-colors duration-300">
-      <div className="relative max-w-md w-full">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-        <input 
-          type="text" 
-          placeholder="Buscar no sistema..." 
-          className="w-full pl-10 pr-4 py-2 bg-background border border-card-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+    <header className="h-16 border-b border-card-border bg-card px-6 flex items-center justify-between transition-colors duration-300 shrink-0">
+      <div className="relative w-full max-w-md hidden sm:block">
+        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
+        <input
+          type="text"
+          placeholder="Buscar lotação ou servidor JFAM..."
+          className="w-full pl-10 pr-4 py-2 bg-background border border-card-border rounded-lg text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary transition-colors"
         />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 ml-auto">
         <ThemeToggle />
-        <div className="h-8 w-px bg-card-border"></div>
-        <button className="relative p-2 text-muted hover:bg-muted-light rounded-full transition-all cursor-pointer">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-rose-500 rounded-full ring-2 ring-card"></span>
+        
+        <button className="p-2 text-muted hover:text-foreground rounded-lg transition-colors relative">
+          <FiBell className="w-5 h-5" />
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" />
         </button>
-        <div className="h-8 w-px bg-card-border hidden sm:block"></div>
-        <div className="text-right hidden sm:block">
-          <p className="text-[10px] font-bold text-muted uppercase tracking-wider">Mês Referência</p>
-          <p className="text-sm font-bold text-primary">2026/5 — Maio</p>
+
+        <div className="h-8 w-px bg-card-border" />
+        
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+            <span className="text-xs font-bold text-primary">AM</span>
+          </div>
+          <div className="hidden md:block text-left">
+            <p className="text-xs font-bold text-foreground leading-none">Seção Judiciária</p>
+            <p className="text-[10px] text-muted leading-none mt-0.5">Amazonas (JFAM)</p>
+          </div>
         </div>
       </div>
     </header>

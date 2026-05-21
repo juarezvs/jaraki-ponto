@@ -1,33 +1,22 @@
 'use client';
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
-
-interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-}
+type ThemeContextType = { theme: Theme; toggleTheme: () => void };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('orbund-theme') as Theme) || 'light';
+    }
+    return 'light';
+  });
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('orbund-theme') as Theme | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else {
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(systemPrefersDark ? 'dark' : 'light');
-    }
     setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isMounted) return;
     const root = window.document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
@@ -35,15 +24,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove('dark');
     }
     localStorage.setItem('orbund-theme', theme);
-  }, [theme, isMounted]);
+  }, [theme]);
 
+  // CORREÇÃO: Declarando explicitamente a função que alterna o estado do tema
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
 
-  if (!isMounted) {
-    return <>{children}</>;
-  }
+  if (!isMounted) return null;
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
@@ -54,8 +42,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
+  
+  // Ajuste de resguardo para renderizações iniciais no ciclo híbrido do Next.js
   if (!context) {
-    return { theme: 'light' as const, toggleTheme: () => {} };
+    return { theme: 'light' as Theme, toggleTheme: () => {} };
   }
   return context;
 }

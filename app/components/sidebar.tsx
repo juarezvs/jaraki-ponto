@@ -1,38 +1,25 @@
 'use client';
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { FiLock, FiUnlock, FiChevronRight, FiFolder, FiUsers, FiLayers } from 'react-icons/fi';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  Users, GraduationCap, BookOpen, Calendar, 
-  BarChart3, Settings, ChevronLeft, ChevronRight, Lock, Unlock, Clock,
-  ClockIcon
-} from 'lucide-react';
 
-export function Sidebar() {
-  const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
-  const [isLocked, setIsLocked] = useState<boolean>(false);
-  const [isHoveringBtn, setIsHoveringBtn] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+export default function Sidebar() {
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
+  const [isHoveringButton, setIsHoveringButton] = useState(false);
 
   useEffect(() => {
-    const savedSidebarState = localStorage.getItem('orbund-sidebar-collapsed');
-    const savedSidebarLock = localStorage.getItem('orbund-sidebar-locked');
-    if (savedSidebarState !== null) setIsCollapsed(savedSidebarState === 'true');
-    if (savedSidebarLock !== null) setIsLocked(savedSidebarLock === 'true');
-    setIsMounted(true);
+    const savedCollapsed = localStorage.getItem('orbund-sidebar-collapsed');
+    const savedLocked = localStorage.getItem('orbund-sidebar-locked');
+    if (savedCollapsed) setIsCollapsed(savedCollapsed === 'true');
+    if (savedLocked) setIsLocked(savedLocked === 'true');
   }, []);
 
-  const handleToggleLockClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const nextLock = !isLocked;
-    const nextCollapse = isLocked ? true : isCollapsed;
-
-    setIsLocked(nextLock);
-    setIsCollapsed(nextCollapse);
-    localStorage.setItem('orbund-sidebar-collapsed', String(nextCollapse));
-    localStorage.setItem('orbund-sidebar-locked', String(nextLock));
+  const updateStates = (collapsed: boolean, locked: boolean) => {
+    setIsCollapsed(collapsed);
+    setIsLocked(locked);
+    localStorage.setItem('orbund-sidebar-collapsed', String(collapsed));
+    localStorage.setItem('orbund-sidebar-locked', String(locked));
   };
 
   const handleSidebarMouseEnter = () => {
@@ -43,68 +30,72 @@ export function Sidebar() {
     if (!isLocked) setIsCollapsed(true);
   };
 
-  const renderButtonIcon = () => {
-    if (isLocked) return <Lock className="h-4 w-4 text-primary" />;
-    if (isHoveringBtn) return <Unlock className="h-4 w-4 text-amber-500" />;
-    return isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />;
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isCollapsed) {
+      updateStates(false, true);
+    } else {
+      if (isLocked) {
+        updateStates(true, false);
+      } else {
+        updateStates(false, true);
+      }
+    }
   };
 
-  if (!isMounted) return <div className="w-20 bg-sidebar-bg h-screen hidden md:block border-r border-sidebar-border" />;
-
-  const menuItems = [
-    { name: 'Dashboard', href: '/', icon: <BarChart3 className="h-5 w-5 shrink-0" /> },
-    { name: 'Espelho de Ponto', href: '/ponto', icon: <Clock className="h-5 w-5 shrink-0" /> },
-    { name: 'Servidores', href: '/servidor', icon: <Users className="h-5 w-5 shrink-0" /> },
-    { name: 'Solicitações', href: '/solicitacoes', icon: <BookOpen className="h-5 w-5 shrink-0" /> },
-    { name: 'Banco de horas', href: '/banco-de-horas', icon: <BookOpen className="h-5 w-5 shrink-0" /> },
-    { name: 'Lançamento Banco de horas', href: '/chefia/banco-de-horas', icon: <BookOpen className="h-5 w-5 shrink-0" /> },
-  ];
-
   return (
-    <div onMouseEnter={handleSidebarMouseEnter} onMouseLeave={handleSidebarMouseLeave} className="relative z-20 h-screen top-0 shrink-0">
-      <aside className={`bg-sidebar-bg text-slate-200 h-full flex flex-col justify-between md:flex border-r border-sidebar-border transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}>
-        <div>
-          <div className="p-5 flex items-center gap-3 border-b border-sidebar-border/40 h-16 min-h-16">
-            <ClockIcon className="h-8 w-8 text-primary shrink-0" />
-            {!isCollapsed && (
-              <div className="whitespace-nowrap">
-                <h1 className="text-base font-bold text-white">PONTO</h1>
-                <p className="text-[10px] text-primary/80 uppercase font-bold tracking-wider">Servidor</p>
-              </div>
-            )}
-          </div>
-
-          <nav className="p-4 space-y-1 overflow-hidden">
-            {menuItems.map((item, idx) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link 
-                  key={idx} 
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                    isActive ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  {item.icon}
-                  {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
-                </Link>
-              );
-            })}
-          </nav>
+    <div 
+      onMouseEnter={handleSidebarMouseEnter}
+      onMouseLeave={handleSidebarMouseLeave}
+      className={`relative h-screen bg-card border-r border-card-border transition-all duration-300 flex flex-col z-20 ${
+        isCollapsed ? 'w-16' : 'w-64'
+      }`}
+    >
+      {/* AREA DE LOGO */}
+      <div className="p-4 border-b border-card-border flex items-center gap-3 overflow-hidden h-16 shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+          <span className="text-white font-bold text-sm">JP</span>
         </div>
-      </aside>
+        {!isCollapsed && (
+          <span className="font-bold text-lg text-foreground tracking-tight whitespace-nowrap">
+            JARAKI-PONTO
+          </span>
+        )}
+      </div>
 
+      {/* LINKS DE NAVEGAÇÃO CORPORATIVA */}
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-muted px-3 py-2 h-8">
+          {!isCollapsed ? 'Fase 1: Fundação' : '•'}
+        </div>
+        <Link href="/" className="flex items-center gap-3 p-3 rounded-lg text-foreground hover:bg-background/80 transition-colors">
+          <FiLayers className="w-5 h-5 text-primary shrink-0" />
+          {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap">Visão Geral</span>}
+        </Link>
+        <Link href="#" className="flex items-center gap-3 p-3 rounded-lg text-foreground hover:bg-background/80 transition-colors">
+          <FiFolder className="w-5 h-5 text-primary shrink-0" />
+          {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap">Lotações (Varas/Núcleos)</span>}
+        </Link>
+        <Link href="#" className="flex items-center gap-3 p-3 rounded-lg text-foreground hover:bg-background/80 transition-colors">
+          <FiUsers className="w-5 h-5 text-primary shrink-0" />
+          {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap">Servidores Ativos</span>}
+        </Link>
+      </nav>
+
+      {/* BOTÃO DA DIVISÓRIA ISOLADO */}
       <button
-        onClick={handleToggleLockClick}
-        onMouseEnter={(e) => { e.stopPropagation(); setIsHoveringBtn(true); }}
-        onMouseLeave={(e) => { e.stopPropagation(); setIsHoveringBtn(false); }}
-        className={`absolute -right-4 top-8 bg-card text-muted rounded-full h-8 w-8 flex items-center justify-center shadow-lg cursor-pointer transition-all duration-200 z-30 border ${
-          isLocked ? 'border-primary ring-4 ring-primary/10 text-primary scale-105' : 'border-card-border hover:border-2 hover:border-primary hover:text-primary hover:scale-110'
+        onClick={handleButtonClick}
+        onMouseEnter={(e) => { e.stopPropagation(); setIsHoveringButton(true); }}
+        onMouseLeave={() => setIsHoveringButton(false)}
+        className={`absolute right-[-14px] top-20 w-7 h-7 rounded-full bg-card border border-card-border flex items-center justify-center shadow-sm pointer-events-auto transition-all duration-200 cursor-pointer hover:scale-105 hover:border-2 hover:border-primary ${
+          isLocked && !isCollapsed ? 'ring-2 ring-primary/40' : ''
         }`}
       >
-        {renderButtonIcon()}
+        {isCollapsed ? (
+          isHoveringButton ? <FiUnlock className="w-4 h-4 text-primary" /> : <FiChevronRight className="w-4 h-4 text-muted" />
+        ) : (
+          isLocked ? <FiLock className="w-4 h-4 text-primary" /> : <FiUnlock className="w-4 h-4 text-muted" />
+        )}
       </button>
     </div>
   );
